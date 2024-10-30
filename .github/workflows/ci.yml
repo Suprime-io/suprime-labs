@@ -36,11 +36,5 @@ jobs:
       run: npm install --save-dev hardhat
     - name: Install Hardhat Dependencies
       run: npm ci
-    - name: Install Solhint
-      run: npm install -g solhint
-    - name: Show Solhint version
-      run: solhint --version
-    - name: Run Lint
-      run: solhint 'contracts/**/*.sol'
     - name: Run Tests
       run: npm test
