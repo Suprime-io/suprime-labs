@@ -13,7 +13,7 @@ describe("Workflow", function () {
   });
 
   async function deployWorkflow() {
-    const workflow = await ethers.deployContract("Workflow", ['Test Workflow']);
+    const workflow = await ethers.deployContract("Workflow", ['Test Workflow', owner]);
     return workflow;
   }
 
@@ -73,6 +73,7 @@ describe("Workflow", function () {
   describe("execute", () => {
 
     let workflow;
+    const defaultInstance = 1;
 
     beforeEach(async () => {
       workflow = await loadFixture(deployWorkflow);
@@ -82,15 +83,17 @@ describe("Workflow", function () {
       await workflow.addTranstition(['init', 1, 2]);
       await workflow.addTranstition(['proceed', 2, 3]);
       await workflow.addTranstition(['init\'n\'proceed', 1, 3]);
+
+      await workflow.instantiate();
     })
 
     it("should execute transition", async () => {
       await expect(workflow
-        .connect(addr1).execute(1))
+        .connect(addr1).execute(defaultInstance, 1))
         .to.emit(workflow, "TransitionExecuted")
         .withArgs('init', 1, 1, 2);
 
-      expect((await workflow.currentState()).name).to.be.equal('Second state');
+      expect((await workflow.currentState(defaultInstance)).name).to.be.equal('Second state');
     });
 
   })
