@@ -17,10 +17,10 @@ async function main() {
   await workflow.addState('In progress');                         //4
   await workflow.addState('Complete');                            //5
 
-  await workflow.addTranstition(['Submit', 1, 2]);
-  await workflow.addTranstition(['Reject', 2, 3]);
-  await workflow.addTranstition(['Accept', 2, 4]);
-  await workflow.addTranstition(['Complete', 4, 5]);
+  await workflow.addTranstition(['Submit', 1, 2, false]);
+  await workflow.addTranstition(['Reject', 2, 3, false]);
+  await workflow.addTranstition(['Accept', 2, 4, false]);
+  await workflow.addTranstition(['Complete', 4, 5, false]);
 
 
 

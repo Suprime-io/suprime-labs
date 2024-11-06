@@ -9,6 +9,8 @@ contract Workflow is Ownable, IWorkflow{
 
     using EnumerableSet for EnumerableSet.UintSet;
 
+    uint256 private constant MAX_TRANSITIONS_PER_STATE = 5;
+
     struct State {
         string name;
         uint256 stateIndex;     //TODO do we need it?
@@ -18,6 +20,7 @@ contract Workflow is Ownable, IWorkflow{
         string name;
         uint256 prevStateIndex;
         uint256 nextStateIndex;
+        bool automatic;
     }
 
     string public name;
@@ -65,6 +68,8 @@ contract Workflow is Ownable, IWorkflow{
         _instancesIndex++;
         currentState[_instancesIndex] = states[1];
         emit Instantiated(_instancesIndex);
+        //try auto transitions
+        tryAutoExecute(_instancesIndex, 1);
         return _instancesIndex;
     }
 
@@ -84,15 +89,17 @@ contract Workflow is Ownable, IWorkflow{
         uint _to = _transitionData.nextStateIndex;
         if (bytes(states[_to].name).length == 0)
             revert WrongStateIndex();
-
+        //TODO if 'auto', validate it's the only auto transition for _from state
+        //TODO validate MAX_TRANSITIONS_PER_STATE for _from state
         _currentTransitionIndex++;
-        transitions[_currentTransitionIndex] = Transition(_transitionData.name, _from, _to);
+        transitions[_currentTransitionIndex] = Transition(_transitionData.name, _from,
+            _to, _transitionData.automatic);
         stateTransitions[_from].add(_currentTransitionIndex);
 
         emit TransitionAdded(_transitionData.name, _from, _to);
     }
 
-    function execute(uint256 _instanceIndex, uint256 _transitionIndex) public atProperStage(_instanceIndex, _transitionIndex)
+    function execute(uint256 _instanceIndex, uint256 _transitionIndex) public atProperStage(_instanceIndex, _transitionIndex) returns (bool)
     {
         Transition memory _transition = transitions[_transitionIndex];
         if (preConditionsPassed(_transitionIndex)) {
@@ -101,9 +108,24 @@ contract Workflow is Ownable, IWorkflow{
             }
             currentState[_instanceIndex] = states[_transition.nextStateIndex];
             emit TransitionExecuted(_transition.name, _transitionIndex, _transition.prevStateIndex, _transition.nextStateIndex);
+            //try auto transitions
+            tryAutoExecute(_instanceIndex, _transition.nextStateIndex);
+            return true;
         } else {
-            revert TransitionInvalidAtThisState();
+            return false;
         }
+    }
+
+    function tryAutoExecute(uint256 _instanceIndex, uint256 _stateIndex) internal {
+        for (uint256 i; i < stateTransitions[_stateIndex].length(); i++) {
+            uint256 _transitionIndex = stateTransitions[_stateIndex].at(i);
+            Transition memory _transition = transitions[_transitionIndex];
+            if (_transition.automatic && execute(_instanceIndex, _transitionIndex)) {
+                //found, and executed
+                return;
+            }
+        }
+
     }
 
     function preConditionsPassed(uint256 _transitionIndex) internal view returns (bool){

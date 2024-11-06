@@ -44,7 +44,7 @@ describe("Workflow", function () {
 
       expect(await workflow.transitionsInState(1)).to.be.equal(0);
 
-      await expect(workflow.addTranstition(['transition', 1, 2]))
+      await expect(workflow.addTranstition(['transition', 1, 2, false]))
         .to.emit(workflow, "TransitionAdded")
         .withArgs('transition', 1, 2);
 
@@ -54,18 +54,28 @@ describe("Workflow", function () {
 
     it("should add transition only by owner", async () => {
       await expect(workflow
-        .connect(addr1).addTranstition(['transition', 1, 2]))
+        .connect(addr1).addTranstition(['transition', 1, 2, false]))
         .to.be.revertedWithCustomError(workflow, 'OwnableUnauthorizedAccount');
     });
 
     it("should not add transition without a state", async () => {
-      await expect(workflow.addTranstition(['transition', 0, 1]))
+      await expect(workflow.addTranstition(['transition', 0, 1, false]))
         .to.be.revertedWithCustomError(workflow, 'WrongStateIndex');
 
-      await expect(workflow.addTranstition(['transition', 1, 2]))
+      await expect(workflow.addTranstition(['transition', 1, 2, false]))
         .to.be.revertedWithCustomError(workflow, 'WrongStateIndex');
     });
 
+    it("should add auto transition and instantly execute it", async () => {
+      await workflow.addState('Second state');
+      await workflow.addTranstition(['transition', 1, 2, true])
+
+      await expect(workflow.instantiate())
+        .to.emit(workflow, "TransitionExecuted")
+        .withArgs('transition', 1, 1, 2);
+
+      expect((await workflow.currentState(1)).name).to.be.equal('Second state');
+    });
 
 
   })
@@ -80,9 +90,9 @@ describe("Workflow", function () {
       await workflow.addState('Second state');
       await workflow.addState('Third state');
 
-      await workflow.addTranstition(['init', 1, 2]);
-      await workflow.addTranstition(['proceed', 2, 3]);
-      await workflow.addTranstition(['init\'n\'proceed', 1, 3]);
+      await workflow.addTranstition(['init', 1, 2, false]);
+      await workflow.addTranstition(['proceed', 2, 3, false]);
+      await workflow.addTranstition(['init\'n\'proceed', 1, 3, false]);
 
       await workflow.instantiate();
     })
