@@ -55,7 +55,7 @@ contract Workflow is Ownable, IWorkflow{
     }
 
     constructor(string memory _name, address owner) Ownable(owner){
-        states[1] = State('initial', 1);
+        states[1] = State('Initial', 1);
         name = _name;
     }
 
@@ -68,10 +68,10 @@ contract Workflow is Ownable, IWorkflow{
         return _instancesIndex;
     }
 
-    function addState(string memory name) public onlyOwner{
+    function addState(string memory _name) public onlyOwner{
         _stateIndex++;
-        states[_stateIndex] = State(name, _stateIndex);
-        emit StateAdded(name, _stateIndex);
+        states[_stateIndex] = State(_name, _stateIndex);
+        emit StateAdded(_name, _stateIndex);
     }
 
     /// @dev Note that both prevStateIndex and nextStateIndex must be created before
