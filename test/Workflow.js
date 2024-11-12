@@ -70,9 +70,9 @@ describe("Workflow", function () {
       await workflow.addState('Second state');
       await workflow.addTranstition(['transition', 1, 2, true])
 
-      await expect(workflow.instantiate())
+      await expect(workflow.instantiate('New Workflow'))
         .to.emit(workflow, "TransitionExecuted")
-        .withArgs('transition', 1, 1, 2);
+        .withArgs('transition', 1, 1, 2, '');
 
       expect((await workflow.currentState(1)).name).to.be.equal('Second state');
     });
@@ -94,14 +94,14 @@ describe("Workflow", function () {
       await workflow.addTranstition(['proceed', 2, 3, false]);
       await workflow.addTranstition(['init\'n\'proceed', 1, 3, false]);
 
-      await workflow.instantiate();
+      await workflow.instantiate('Test Workflow');
     })
 
     it("should execute transition", async () => {
       await expect(workflow
-        .connect(addr1).execute(defaultInstance, 1))
+        .connect(addr1).execute(defaultInstance, 1, ''))
         .to.emit(workflow, "TransitionExecuted")
-        .withArgs('init', 1, 1, 2);
+        .withArgs('init', 1, 1, 2, '');
 
       expect((await workflow.currentState(defaultInstance)).name).to.be.equal('Second state');
     });

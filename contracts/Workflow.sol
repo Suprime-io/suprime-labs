@@ -26,9 +26,9 @@ contract Workflow is Ownable, IWorkflow{
     string public name;
 
     // WORKFLOW CONFIG
-    uint256 internal _stateIndex = 1;
+    uint256 public stateIndex = 1;
     mapping(uint256 stateIndex => State state) public states;
-    uint256 internal _currentTransitionIndex;
+    uint256 public transitionIndex;
     mapping(uint256 transitionIndex => Transition transition) public transitions;
 
     // 'State' 1-* 'Transitions' 1-* 'PreConditions'/'PostTriggers'
@@ -42,8 +42,8 @@ contract Workflow is Ownable, IWorkflow{
 
     event StateAdded(string name, uint256 indexed index);
     event TransitionAdded(string name, uint256 indexed from, uint256 indexed to);
-    event Instantiated(uint256 indexed index);
-    event TransitionExecuted(string name, uint256 indexed index, uint256 indexed from, uint256 indexed to);
+    event Instantiated(string name, uint256 indexed index);
+    event TransitionExecuted(string name, uint256 indexed index, uint256 indexed from, uint256 indexed to, string _metaUri);
 
     error WrongStateIndex();
     /// Transition cannot be called at this time.
@@ -63,20 +63,20 @@ contract Workflow is Ownable, IWorkflow{
     }
 
     /// @dev Note that everyone can create a new instance of that (configured) workflow
-    function instantiate() external returns (uint256){
+    function instantiate(string memory _nameTag) external returns (uint256){
         //set to first possible state
         _instancesIndex++;
         currentState[_instancesIndex] = states[1];
-        emit Instantiated(_instancesIndex);
+        emit Instantiated(_nameTag, _instancesIndex);
         //try auto transitions
         tryAutoExecute(_instancesIndex, 1);
         return _instancesIndex;
     }
 
     function addState(string memory _name) public onlyOwner{
-        _stateIndex++;
-        states[_stateIndex] = State(_name, _stateIndex);
-        emit StateAdded(_name, _stateIndex);
+        stateIndex++;
+        states[stateIndex] = State(_name, stateIndex);
+        emit StateAdded(_name, stateIndex);
     }
 
     /// @dev Note that both prevStateIndex and nextStateIndex must be created before
@@ -91,15 +91,15 @@ contract Workflow is Ownable, IWorkflow{
             revert WrongStateIndex();
         //TODO if 'auto', validate it's the only auto transition for _from state
         //TODO validate MAX_TRANSITIONS_PER_STATE for _from state
-        _currentTransitionIndex++;
-        transitions[_currentTransitionIndex] = Transition(_transitionData.name, _from,
+        transitionIndex++;
+        transitions[transitionIndex] = Transition(_transitionData.name, _from,
             _to, _transitionData.automatic);
-        stateTransitions[_from].add(_currentTransitionIndex);
+        stateTransitions[_from].add(transitionIndex);
 
         emit TransitionAdded(_transitionData.name, _from, _to);
     }
 
-    function execute(uint256 _instanceIndex, uint256 _transitionIndex) public atProperStage(_instanceIndex, _transitionIndex) returns (bool)
+    function execute(uint256 _instanceIndex, uint256 _transitionIndex, string memory _metaUri) public atProperStage(_instanceIndex, _transitionIndex) returns (bool)
     {
         Transition memory _transition = transitions[_transitionIndex];
         if (preConditionsPassed(_transitionIndex)) {
@@ -107,7 +107,7 @@ contract Workflow is Ownable, IWorkflow{
                 revert PostTriggerFailure();
             }
             currentState[_instanceIndex] = states[_transition.nextStateIndex];
-            emit TransitionExecuted(_transition.name, _transitionIndex, _transition.prevStateIndex, _transition.nextStateIndex);
+            emit TransitionExecuted(_transition.name, _transitionIndex, _transition.prevStateIndex, _transition.nextStateIndex, _metaUri);
             //try auto transitions
             tryAutoExecute(_instanceIndex, _transition.nextStateIndex);
             return true;
@@ -120,7 +120,7 @@ contract Workflow is Ownable, IWorkflow{
         for (uint256 i; i < stateTransitions[_stateIndex].length(); i++) {
             uint256 _transitionIndex = stateTransitions[_stateIndex].at(i);
             Transition memory _transition = transitions[_transitionIndex];
-            if (_transition.automatic && execute(_instanceIndex, _transitionIndex)) {
+            if (_transition.automatic && execute(_instanceIndex, _transitionIndex, '')) {
                 //found, and executed
                 return;
             }
