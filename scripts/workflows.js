@@ -4,7 +4,7 @@ async function main() {
   const [deployer] = await ethers.getSigners();
 
 
-  /*  Workflow config */
+  /*  Workflow config for two parties to negotiate*/
   const workflowName = 'TwoParties';
   const workflow = await hre.ethers.deployContract("Workflow", [workflowName, deployer.address])
   await workflow.waitForDeployment();
@@ -24,17 +24,26 @@ async function main() {
   await workflow.addTranstition(['Accept', 3, 5, false]);
   await workflow.addTranstition(['Complete', 5, 6, false]);
 
+  /*  Workflow config for one-step*/
+  const oneStep = 'OneStep';
+  const workflowOneStep = await hre.ethers.deployContract("Workflow", [oneStep, deployer.address])
+  await workflowOneStep.waitForDeployment();
+  console.log(
+    `Workflow ${oneStep} was deployed at ${await workflowOneStep.getAddress()}`
+  );
 
+  await workflowOneStep.addState('Complete');               //2
+  await workflowOneStep.addTranstition(['Complete', 1, 2, false]);
 
   //verify
   if (hre.network.name !== 'localhost') {
-    console.log('Waiting before verification....')
-    const delay = ms => new Promise(res => setTimeout(res, ms));
-    await delay(10000);
-
     await hre.run("verify:verify", {
       address: await workflow.getAddress(),
       constructorArguments: [workflowName, deployer.address],
+    });
+    await hre.run("verify:verify", {
+      address: await workflowOneStep.getAddress(),
+      constructorArguments: [oneStep, deployer.address],
     });
   }
 
