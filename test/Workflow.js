@@ -87,12 +87,12 @@ describe("Workflow", function () {
 
     beforeEach(async () => {
       workflow = await loadFixture(deployWorkflow);
-      await workflow.addState('Second state');
-      await workflow.addState('Third state');
+      await workflow.addState('Second state');    //2
+      await workflow.addState('Third state');     //3
 
-      await workflow.addTranstition(['init', 1, 2, false]);
-      await workflow.addTranstition(['proceed', 2, 3, false]);
-      await workflow.addTranstition(['init\'n\'proceed', 1, 3, false]);
+      await workflow.addTranstition(['init', 1, 2, false]);             //1
+      await workflow.addTranstition(['proceed', 2, 3, false]);          //2
+      await workflow.addTranstition(['init\'n\'proceed', 1, 3, false]); //3
 
       await workflow.instantiate('Test Workflow');
     })
@@ -103,6 +103,15 @@ describe("Workflow", function () {
         .to.emit(workflow, "TransitionExecuted")
         .withArgs('init', 1, 1, 2, '');
 
+      expect((await workflow.currentState(defaultInstance)).name).to.be.equal('Second state');
+    });
+
+    it("should execute transition to same state", async () => {
+      await workflow.addTranstition(['round to 2', 2, 2, false]);       //4
+
+      await workflow.execute(defaultInstance, 1, '');
+      expect((await workflow.currentState(defaultInstance)).name).to.be.equal('Second state');
+      await workflow.execute(defaultInstance, 4, '');
       expect((await workflow.currentState(defaultInstance)).name).to.be.equal('Second state');
     });
 

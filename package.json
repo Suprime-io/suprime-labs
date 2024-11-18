@@ -7,7 +7,8 @@
     "test": "npx hardhat test",
     "local_node": "npx hardhat node",
     "deploy_workflow_local": "npx hardhat run --network localhost scripts/workflows.js",
-    "deploy_workflow_sepolia": "npx hardhat run --network sepolia scripts/workflows.js"
+    "deploy_workflow_sepolia": "npx hardhat run --network sepolia scripts/workflows.js",
+    "deploy_workflow_demo_sepolia": "npx hardhat run --network sepolia scripts/workflows_demo.js"
   },
   "repository": {
     "type": "git",
