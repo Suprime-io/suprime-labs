@@ -99,11 +99,13 @@ describe("Workflow", function () {
 
     it("should execute transition", async () => {
       await expect(workflow
-        .connect(addr1).execute(defaultInstance, 1, ''))
+        .connect(addr1).execute(defaultInstance, 1, 'hello'))
         .to.emit(workflow, "TransitionExecuted")
-        .withArgs('init', 1, 1, 2, '');
+        .withArgs('init', 1, 1, 2, 'hello');
 
       expect((await workflow.currentState(defaultInstance)).name).to.be.equal('Second state');
+      //logs
+      expect((await workflow.auditLogs(defaultInstance, 0)).transitionName).to.be.equal('init');
     });
 
     it("should execute transition to same state", async () => {

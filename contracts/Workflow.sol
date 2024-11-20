@@ -23,6 +23,12 @@ contract Workflow is Ownable, IWorkflow{
         bool automatic;
     }
 
+    struct AuditLog {
+        string transitionName;
+        uint256 transitionIndex;
+        string metaUri;
+    }
+
     string public name;
 
     // WORKFLOW CONFIG
@@ -39,6 +45,7 @@ contract Workflow is Ownable, IWorkflow{
     // WORKFLOW INSTANCES
     uint256 internal _instancesIndex;
     mapping(uint256 instance => State state) public currentState;
+    mapping(uint256 instance => AuditLog[] logs) public auditLogs;
 
     event StateAdded(string name, uint256 indexed index);
     event TransitionAdded(string name, uint256 indexed from, uint256 indexed to);
@@ -107,6 +114,10 @@ contract Workflow is Ownable, IWorkflow{
                 revert PostTriggerFailure();
             }
             currentState[_instanceIndex] = states[_transition.nextStateIndex];
+            auditLogs[_instanceIndex].push(
+                AuditLog(_transition.name, _transitionIndex, _metaUri)
+            );
+
             emit TransitionExecuted(_transition.name, _transitionIndex, _transition.prevStateIndex, _transition.nextStateIndex, _metaUri);
             //try auto transitions
             tryAutoExecute(_instanceIndex, _transition.nextStateIndex);
